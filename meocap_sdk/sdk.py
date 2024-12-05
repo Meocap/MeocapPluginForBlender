@@ -1,5 +1,7 @@
+import math
 import socket
 import json
+import threading
 from dataclasses import dataclass, field
 from typing import List, Optional
 import mathutils  # Blender's built-in math library
@@ -37,8 +39,8 @@ class SkelBase:
 @dataclass
 class Joint:
     pos: List[float]  # 3 elements
-    glb_rot: List[float]  # 4 elements (quaternion)
-    loc_rot: List[float]  # 4 elements (quaternion)
+    glb_rot: mathutils.Quaternion  # 4 elements (quaternion)
+    loc_rot: mathutils.Quaternion  # 4 elements (quaternion)
 
 
 @dataclass
@@ -62,11 +64,9 @@ class Addr:
 @dataclass
 class MeoFrame:
     frame_id: int
-    translation: List[float]  # 3 elements
+    translation: mathutils.Vector  # 3 elements
     joints: List[Joint]  # 24 elements
     src: Addr
-    left_joints: List[Joint] = field(default_factory=list)
-    right_joints: List[Joint] = field(default_factory=list)
 
 
 class Status:
@@ -86,6 +86,8 @@ class MeocapSDK:
     def __init__(self, addr: Addr):
         self.socket = None
         self.addr = addr
+        self.stop_event: Optional[threading.Event] = None
+        self.frame: Optional[MeoFrame] = None
 
     def bind(self):
         try:
@@ -94,6 +96,9 @@ class MeocapSDK:
             self.socket.settimeout(0.25)
         except socket.error as e:
             return Status(ErrorType.SOCKET, e.errno)
+        self.stop_event = threading.Event()
+        t = threading.Thread(target=self.recv_thread)
+        t.start()
         return Status(ErrorType.NONE, 0)
 
     def send_skel(self, skel: SkelBase):
@@ -104,6 +109,9 @@ class MeocapSDK:
             return Status(ErrorType.SOCKET, str(e))
         return Status(ErrorType.NONE, 0)
 
+    def get_last_frame(self):
+        return self.frame
+
     def recv_frame(self) -> Optional[MeoFrame]:
         try:
             data, src = self.socket.recvfrom(65536)
@@ -112,10 +120,13 @@ class MeocapSDK:
 
             meo_frame = MeoFrame(
                 frame_id=frame.frame_id,
-                translation=frame.translation,
-                joints=[Joint([0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]) for _ in range(24)],
+                translation=mathutils.Vector((frame.translation[0], -frame.translation[2], frame.translation[1])),
+                joints=[Joint([0, 0, 0], None, None) for _ in range(24)],
                 src=Addr.from_socket_addr(src)
             )
+
+            def convert_axis(q: mathutils.Quaternion):
+                return mathutils.Quaternion(mathutils.Vector([q.w, q.x, -q.z, q.y]))
 
             for i in range(24):
                 rot = frame.glb_opt_pose[i * 9:(i + 1) * 9]
@@ -124,34 +135,51 @@ class MeocapSDK:
                 rot_matrix[0][0:3] = rot[0], rot[1], rot[2]
                 rot_matrix[1][0:3] = rot[3], rot[4], rot[5]
                 rot_matrix[2][0:3] = rot[6], rot[7], rot[8]
-                r_glb = rot_matrix.to_quaternion()
+                r_glb = rot_matrix.to_quaternion().inverted()
                 meo_frame.joints[i].pos = pos
-                meo_frame.joints[i].glb_rot = [r_glb.x, r_glb.y, r_glb.z, r_glb.w]
+                meo_frame.joints[i].glb_rot = convert_axis(r_glb)
 
-                rot = frame.glb_opt_pose[i*9:(i+1)*9]
+                rot = frame.optimized_pose[i * 9:(i + 1) * 9]
                 rot_matrix = mathutils.Matrix()
                 rot_matrix[0][0:3] = rot[0], rot[1], rot[2]
                 rot_matrix[1][0:3] = rot[3], rot[4], rot[5]
                 rot_matrix[2][0:3] = rot[6], rot[7], rot[8]
-                r_loc = rot_matrix.to_quaternion()
-                meo_frame.joints[i].loc_rot = [r_loc.x, r_loc.y, r_loc.z, r_loc.w]
+                r_loc = rot_matrix.to_quaternion().inverted()
+                meo_frame.joints[i].loc_rot = convert_axis(r_loc)
+            '''
+            for i in range(24):
+                meo_frame.joints[i].loc_rot = mathutils.Matrix.Identity(4).to_quaternion()
+                if i == 16:
+                    rotation_matrix = mathutils.Matrix.Rotation(math.radians(90), 4, 'Y')
+                    meo_frame.joints[i].loc_rot = rotation_matrix.to_quaternion()
+            '''
+
             return meo_frame
         except Exception as e:
             return None
 
-
     def close(self):
+        if self.stop_event is not None:
+            self.stop_event.set()
+            self.stop_event = None
         if self.socket:
             self.socket.close()
             self.socket = None
         return Status(ErrorType.NONE, 0)
 
+    def recv_thread(self):
+        while (self.stop_event is not None) and (not self.stop_event.is_set()):
+            self.frame = self.recv_frame()
+
+
 # Example usage in Blender:
-# addr = Addr(127, 0, 0, 1, 8080)
-# connection = UdpConnection(addr)
-# status = connection.bind()
-# if status.ty == ErrorType.NONE:
-#     frame = connection.recv_frame()
-#     if frame:
-#         print(f"Received frame {frame.frame_id}")
-# connection.close()
+if __name__ == "__main__":
+    addr = Addr(127, 0, 0, 1, 14999)
+    connection = MeocapSDK(addr)
+    status = connection.bind()
+    while True:
+        if status.ty == ErrorType.NONE:
+            frame = connection.recv_frame()
+            if frame:
+                print(f"Received frame {frame.frame_id}")
+    connection.close()

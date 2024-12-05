@@ -1,6 +1,9 @@
 import bpy
 from . import ops
 from . import core
+from . import ui
+from . import glb
+
 
 bl_info = {
     "name": "Meocap",
@@ -14,33 +17,53 @@ bl_info = {
 }
 
 class_list = [
-    ops.MeocapRetargetMap,
+    core.StringItem,
     core.MeocapRetargetNode,
+    core.MeocapRetargetMap,
     core.MeocapState,
-
+    ui.MeocapPanel,
+    ops.ArmatureAutoMap,
+    ops.AutoMapBoneVRMExt,
+    ops.CreateRetargetConfig,
+    ops.AutoMapBoneClear,
+    ops.MeocapConnect,
+    ops.MeocapDisconnect,
+    ops.MeocapLoadRecording,
+    ops.MeocapImportRetargetConfig,
+    ops.MeocapExportRetargetConfig
 ]
 
 
 @bpy.app.handlers.persistent
 def reset_property_values(_):
-    bpy.context.scene.open = False
-    bpy.context.scene.recording = False
-    # bind_bones = bpy.context.scene.bind_bones
-    # bind_bones.clear()
-    # for i in range(len(joints)):
-    #     bone = bind_bones.add()
-    #     bone.key = REBOCAP_JOINT_NAMES[i]
-    #     bone.value = joints[i]
+    pass
 
 
 def register():
     bpy.app.handlers.load_post.append(reset_property_values)
+
+    g = glb.glb()
+
+    g.pose_manager = ops.create_pose_manager()
+
     for item in class_list:
         bpy.utils.register_class(item)
     core.register_types()
 
 
+@bpy.app.handlers.persistent
+def on_load(dummy):
+    """在场景加载后检查并初始化数据"""
+    pass
+
+
+bpy.app.handlers.load_post.append(on_load)
+
+
 def unregister():
+    ops.stop_all()
+    if on_load in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.remove(on_load)
     if reset_property_values in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(reset_property_values)
     for item in class_list:

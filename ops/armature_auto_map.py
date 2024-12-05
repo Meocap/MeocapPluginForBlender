@@ -3,9 +3,7 @@ from typing import List, Optional
 
 import bpy
 from dataclasses import dataclass, field
-
-from core import MeocapRetargetMap
-
+from ..glb import glb
 
 @dataclass
 class BoneChainNode:
@@ -56,7 +54,7 @@ VRM_BONE_CHAIN = [
 
 
 class ArmatureAutoMap(bpy.types.Operator):
-    bl_idname = "meocap.armature_auto_map"
+    bl_idname = "meocap.auto_map_bone"
     bl_label = "Auto Animate Map"
     @classmethod
     def poll(cls, ctx):
@@ -121,3 +119,55 @@ class ArmatureAutoMap(bpy.types.Operator):
 
 
         return {'FINISHED'}
+class AutoMapBoneVRMExt(bpy.types.Operator):
+    bl_idname = 'meocap.auto_map_bone_vrm_ext'
+    bl_label = 'Auto Map Bone'
+
+    @classmethod
+    def poll(cls, ctx):
+        return True
+
+    def execute(self, ctx):
+        all_names = ('hips', 'spine', 'chest', 'upperChest', 'neck', 'head', 'leftEye', 'rightEye', 'jaw', 'leftUpperLeg', 'leftLowerLeg', 'leftFoot', 'leftToes', 'rightUpperLeg', 'rightLowerLeg', 'rightFoot', 'rightToes', 'leftShoulder', 'leftUpperArm', 'leftLowerArm', 'leftHand', 'rightShoulder', 'rightUpperArm', 'rightLowerArm', 'rightHand', 'leftThumbProximal', 'leftThumbIntermediate', 'leftThumbDistal', 'leftIndexProximal', 'leftIndexIntermediate', 'leftIndexDistal', 'leftMiddleProximal', 'leftMiddleIntermediate', 'leftMiddleDistal', 'leftRingProximal', 'leftRingIntermediate', 'leftRingDistal', 'leftLittleProximal', 'leftLittleIntermediate', 'leftLittleDistal', 'rightThumbProximal', 'rightThumbIntermediate', 'rightThumbDistal', 'rightIndexProximal', 'rightIndexIntermediate', 'rightIndexDistal', 'rightMiddleProximal', 'rightMiddleIntermediate', 'rightMiddleDistal', 'rightRingProximal', 'rightRingIntermediate', 'rightRingDistal', 'rightLittleProximal', 'rightLittleIntermediate', 'rightLittleDistal')
+        vrm_bone_list = ['hips', 'leftUpperLeg', 'rightUpperLeg', 'spine', 'leftLowerLeg', 'rightLowerLeg',
+                         'chest', 'leftFoot', 'rightFoot', 'upperChest', 'leftToes', 'rightToes',
+                         'neck', 'leftShoulder', 'rightShoulder', 'head', 'leftUpperArm', 'rightUpperArm',
+                         'leftLowerArm', 'rightLowerArm', 'leftHand', 'rightHand']
+        source = bpy.data.objects.get(glb().scene(ctx).meocap_state.source_armature)
+        if source and source.type == 'ARMATURE':
+            armature_data = source.data
+            if getattr(armature_data, 'vrm_addon_extension') is not None:
+                mappings = {}
+                for human_bone in armature_data.vrm_addon_extension.vrm0.humanoid.human_bones:
+                    if human_bone.bone not in all_names:
+                        continue
+                    if not human_bone.node.bone_name:
+                        continue
+                    mappings[human_bone.bone] = human_bone.node.bone_name
+                nodes = ctx.scene.meocap_bone_map.nodes
+                if len(nodes) == 24:
+                    for i in range(22):
+                        if vrm_bone_list[i] in mappings:
+                            nodes[i].name = mappings[vrm_bone_list[i]]
+                        else:
+                            nodes[i].name = ''
+
+        return {'FINISHED'}
+
+
+class AutoMapBoneClear(bpy.types.Operator):
+    bl_idname = 'meocap.auto_map_bone_clear'
+    bl_label = 'Auto Map Bone'
+
+    @classmethod
+    def poll(cls, ctx):
+        return True
+
+    def execute(self, ctx):
+
+         nodes = ctx.scene.meocap_bone_map.nodes
+         if len(nodes) == 24:
+             for i in range(24):
+                nodes[i].name = ''
+
+         return {'FINISHED'}

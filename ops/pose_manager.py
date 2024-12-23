@@ -3,7 +3,7 @@ from typing import Optional, List
 
 import mathutils
 import json
-from ..meocap_sdk import MeocapSDK, Addr, ErrorType, FrameReader,MeoFrame
+from ..meocap_sdk import MeocapSDK, Addr, ErrorType, FrameReader, MeoFrame
 from ..glb import glb
 
 
@@ -12,6 +12,15 @@ class PoseBone:
         self.idx = idx
         self.rest_matrix_to_world = mathutils.Matrix.Identity(4).to_quaternion()
         self.rest_matrix_from_world = mathutils.Matrix.Identity(4).to_quaternion()
+
+
+class PoseRootBone:
+    def __init__(self):
+        self.name = ""
+        self.matrix_global_2_root_inverse = mathutils.Matrix.Identity(4)
+        self.matrix_root_2_hip_inverse = mathutils.Matrix.Identity(4)
+        self.matrix_global_hip = mathutils.Matrix.Identity(4)
+        self.offset = mathutils.Vector([0,0,0])
 
 
 def fill_all_pose(rots: List[mathutils.Quaternion], bone_names: List[str]):
@@ -35,9 +44,11 @@ class PoseManager:
     def __init__(self):
         self.sdk = MeocapSDK(addr=Addr(a=127, b=0, c=0, d=1, port=14999))
         self.bones = [PoseBone(index) for index in range(24)]
+        self.trans_offset = mathutils.Vector([0, 0, 0])
         self.has_connected = False
         self.has_init_bones = False
         self.recordings = []
+        self.root = PoseRootBone()
 
     def connect(self, port) -> bool:
         self.sdk.addr.port = port
@@ -65,6 +76,18 @@ class PoseManager:
                 if data_bone is not None:
                     self.bones[i].rest_matrix_to_world = data_bone.matrix_local.to_quaternion()
                     self.bones[i].rest_matrix_from_world = self.bones[i].rest_matrix_to_world.inverted()
+                    if i == 0:
+                        cur_root_bone = data_bone
+                        while cur_root_bone.parent is not None:
+                            cur_root_bone = cur_root_bone.parent
+                        self.root.name = cur_root_bone.name
+                        self.root.matrix_root_2_hip_inverse = (data_bone.matrix_local.inverted() @ cur_root_bone.matrix_local).inverted()
+                        self.root.matrix_global_2_root_inverse = (source_obj.matrix_world @ cur_root_bone.matrix_local).inverted()
+                        self.root.matrix_global_hip = source_obj.matrix_world @ cur_root_bone.matrix_local
+                        self.trans_offset = cur_root_bone.matrix_local.translation
+                        print("Tran offset:")
+                        print(self.trans_offset)
+
         self.has_init_bones = True
 
     def recv_and_perform(self, ctx):
@@ -76,7 +99,6 @@ class PoseManager:
         if self.has_init_bones:
             frame = self.sdk.get_last_frame()
             if frame is not None:
-                print(frame.frame_id)
                 scene = glb().scene(ctx)
                 if scene.meocap_state.is_recording:
                     self.recordings.append(frame)
@@ -93,10 +115,13 @@ class PoseManager:
                         new_pose = self.bones[i].rest_matrix_from_world @ loc_rots[i] @ self.bones[
                             i].rest_matrix_to_world
                         perform_bone.rotation_quaternion = new_pose
-                        if i == 0:
-                            if perform_bone.parent is not None:
-                                perform_bone = perform_bone.parent
-                            perform_bone.matrix.translation = trans
+                        if i == 0 and self.root.name != '':
+                            root_bone = source_obj.pose.bones.get(self.root.name)
+                            if root_bone is not None:
+                                new_global_hip: mathutils.Matrix = self.root.matrix_global_hip
+                                new_global_hip.translation = trans + self.trans_offset
+                                new_local_matrix = self.root.matrix_global_2_root_inverse @ new_global_hip @ self.root.matrix_root_2_hip_inverse
+                                root_bone.location = new_local_matrix.translation
 
     def load_recording(self, ctx, path, frames):
         bone_names = [n.name for n in glb().scene(ctx).meocap_bone_map.nodes]

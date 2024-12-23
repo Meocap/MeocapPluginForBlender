@@ -3,7 +3,7 @@ from typing import Optional, List
 
 import mathutils
 import json
-from ..meocap_sdk import MeocapSDK, Addr, ErrorType, FrameReader
+from ..meocap_sdk import MeocapSDK, Addr, ErrorType, FrameReader,MeoFrame
 from ..glb import glb
 
 
@@ -37,6 +37,7 @@ class PoseManager:
         self.bones = [PoseBone(index) for index in range(24)]
         self.has_connected = False
         self.has_init_bones = False
+        self.recordings = []
 
     def connect(self, port) -> bool:
         self.sdk.addr.port = port
@@ -77,6 +78,8 @@ class PoseManager:
             if frame is not None:
                 print(frame.frame_id)
                 scene = glb().scene(ctx)
+                if scene.meocap_state.is_recording:
+                    self.recordings.append(frame)
                 nodes = scene.meocap_bone_map.nodes
                 scene.meocap_state.frame_id = frame.frame_id
                 bone_names = [n.name for n in nodes]
@@ -126,9 +129,6 @@ class PoseManager:
                             frame_i,
                             new_pose[axis]
                         )
-
-
-
         # translation
         root_bone_name = bone_names[0]
         if source_obj.pose.bones.get(root_bone_name) is not None:
@@ -142,7 +142,66 @@ class PoseManager:
             c.keyframe_points.add(len(frames))
         for frame_i, frame in enumerate(frames):
             trans = frame.translation
-            trans = [trans.x,trans.y,trans.z]
+            trans = [trans.x, trans.y, trans.z]
+            for axis in range(3):
+                trans_curves[axis].keyframe_points[frame_i].co = (
+                    frame_i,
+                    trans[axis]
+                )
+
+        source_obj.animation_data_create()
+        source_obj.animation_data.action = action
+
+    def start_recording(self):
+        self.recordings = []
+
+    def end_recording(self, ctx):
+        self.load_frames(ctx, "Meocap Recording", self.recordings)
+
+    def load_frames(self, ctx, path, frames: List[MeoFrame]):
+        bone_names = [n.name for n in glb().scene(ctx).meocap_bone_map.nodes]
+
+        source_obj = bpy.data.objects.get(ctx.scene.meocap_state.source_armature)
+        if source_obj is None:
+            return
+        action = bpy.data.actions.new(name=path)
+        frame_dt = 1 / ctx.scene.render.fps
+
+        data_paths = ['pose.bones["%s"].rotation_quaternion' % n if n != "" else "" for n in bone_names]
+        curves = [[action.fcurves.new(data_path=p, index=i) for i in range(4)] if p != "" else None for p in data_paths]
+        for c in curves:
+            if c is not None:
+                for a in c:
+                    a.keyframe_points.add(len(frames))
+
+        if not self.has_init_bones:
+            self.init_bones(ctx)
+
+        for frame_i, frame in enumerate(frames):
+            loc_rots = [j.loc_rot for j in frame.joints]
+            loc_rots = fill_all_pose(loc_rots, bone_names)
+            for i in range(22):
+                if curves[i] is not None:
+                    new_pose = self.bones[i].rest_matrix_from_world @ loc_rots[i] @ self.bones[i].rest_matrix_to_world
+                    for axis in range(4):
+                        curves[i][axis].keyframe_points[frame_i].co = (
+                            frame_i,
+                            new_pose[axis]
+                        )
+        # translation
+        root_bone_name = bone_names[0]
+        if source_obj.pose.bones.get(root_bone_name) is not None:
+            if source_obj.pose.bones.get(root_bone_name).parent is not None:
+                root_bone_name = source_obj.pose.bones.get(root_bone_name).parent.name
+
+        root_data_path = 'pose.bones["%s"].location' % root_bone_name
+        trans_curves = [action.fcurves.new(data_path=root_data_path, index=i) for i in range(3)]
+
+        for c in trans_curves:
+            c.keyframe_points.add(len(frames))
+        for frame_i, frame in enumerate(frames):
+            trans = frame.translation
+            trans = [trans.x, trans.y, trans.z]
             for axis in range(3):
                 trans_curves[axis].keyframe_points[frame_i].co = (
                     frame_i,
@@ -269,6 +328,28 @@ class MeocapLoadRecording(bpy.types.Operator):
     def invoke(self, ctx, event):
         ctx.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
+
+class MeocapStartRecording(bpy.types.Operator):
+    bl_idname = "meocap.start_recording"
+    bl_label = "Start"
+
+    def execute(self, ctx):
+        glb().scene(ctx).meocap_state.is_recording = True
+        global pose_manager
+        pose_manager.start_recording()
+        return {'FINISHED'}
+
+
+class MeocapEndRecording(bpy.types.Operator):
+    bl_idname = "meocap.end_recording"
+    bl_label = "End"
+
+    def execute(self, ctx):
+        glb().scene(ctx).meocap_state.is_recording = False
+        global pose_manager
+        pose_manager.end_recording(ctx)
+        return {'FINISHED'}
 
 
 class MeocapImportRetargetConfig(bpy.types.Operator):

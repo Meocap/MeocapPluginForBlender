@@ -91,6 +91,8 @@ class MeocapState(bpy.types.PropertyGroup):
         max=1048576,
         min=0
     )
+    is_recording: bpy.props.BoolProperty(name="Recording")
+
 
 
 

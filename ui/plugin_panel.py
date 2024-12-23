@@ -45,6 +45,7 @@ class MeocapPanel(bpy.types.Panel):
         row = col.row(align=True)
         row.label(text=f"FrameId:{ctx.scene.meocap_state.frame_id}")
         row = col.row(align=True)
+
         if ctx.scene.meocap_state.has_connected:
             row.operator('meocap.disconnect', text='Disconnect', icon='LINKED')
         else:
@@ -53,6 +54,12 @@ class MeocapPanel(bpy.types.Panel):
         row = col.row(align=True)
         row.label(text="Performer")
         row.prop(ctx.scene.meocap_state, "source_armature")
+
+        row = col.row(align=True)
+        if ctx.scene.meocap_state.is_recording:
+            row.operator('meocap.end_recording', text='End Recording', icon='MODIFIER_OFF')
+        else:
+            row.operator('meocap.start_recording', text='Start Recording', icon='MODIFIER_ON')
 
         bone_map = ctx.scene.meocap_bone_map
         if len(bone_map.nodes) == 24:

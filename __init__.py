@@ -30,7 +30,9 @@ class_list = [
     ops.MeocapDisconnect,
     ops.MeocapLoadRecording,
     ops.MeocapImportRetargetConfig,
-    ops.MeocapExportRetargetConfig
+    ops.MeocapExportRetargetConfig,
+    ops.MeocapStartRecording,
+    ops.MeocapEndRecording
 ]
 
 

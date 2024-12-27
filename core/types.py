@@ -30,20 +30,21 @@ def on_update_skel(self, context):
                     if parent_index != -1 and nodes[parent_index].name != "":
                         for bone in bones:
                             if bone.name == nodes[parent_index].name:
-                                if index in wide_bone:
-                                    children_bone = []
-                                    def get_all_children(b):
-                                        nonlocal children_bone
-                                        children_bone = children_bone + [_ for _ in b.children]
-                                        for child in b.children:
-                                            get_all_children(child)
-                                    get_all_children(bone)
-                                else:
-                                    children_bone = bone.children
+                                children_bone = []
+                                def get_all_children(b):
+                                    nonlocal children_bone
+                                    children_bone = children_bone + [_ for _ in b.children]
+                                    for child in b.children:
+                                        get_all_children(child)
+                                get_all_children(bone)
+
+
                 node.available_bones.clear()
                 for bone in children_bone:
                     new_available = node.available_bones.add()
                     new_available.name = bone.name
+
+
     return None
 
 

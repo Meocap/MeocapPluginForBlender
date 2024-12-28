@@ -63,7 +63,7 @@ class PoseManager:
 
     def init_bones(self, ctx):
         nodes = ctx.scene.meocap_bone_map.nodes
-        source_obj = bpy.data.objects.get(ctx.scene.meocap_state.source_armature)
+        source_obj = ctx.scene.meocap_state.source_armature
         if source_obj is None:
             return
         if not len(nodes) == 24:
@@ -91,7 +91,7 @@ class PoseManager:
         self.has_init_bones = True
 
     def recv_and_perform(self, ctx):
-        source_obj = bpy.data.objects.get(ctx.scene.meocap_state.source_armature)
+        source_obj = ctx.scene.meocap_state.source_armature
         if source_obj is None:
             return
         if not self.has_init_bones:
@@ -126,7 +126,7 @@ class PoseManager:
     def load_recording(self, ctx, path, frames):
         bone_names = [n.name for n in glb().scene(ctx).meocap_bone_map.nodes]
 
-        source_obj = bpy.data.objects.get(ctx.scene.meocap_state.source_armature)
+        source_obj = ctx.scene.meocap_state.source_armature
         if source_obj is None:
             return
         action = bpy.data.actions.new(name=path)
@@ -186,7 +186,7 @@ class PoseManager:
     def load_frames(self, ctx, path, frames: List[MeoFrame]):
         bone_names = [n.name for n in glb().scene(ctx).meocap_bone_map.nodes]
 
-        source_obj = bpy.data.objects.get(ctx.scene.meocap_state.source_armature)
+        source_obj = ctx.scene.meocap_state.source_armature
         if source_obj is None:
             return
         action = bpy.data.actions.new(name=path)
@@ -418,7 +418,6 @@ class MeocapExportRetargetConfig(bpy.types.Operator):
     )
 
     def execute(self, ctx):
-
         if not self.filepath.endswith(".meoretarget"):
             self.filepath += ".meoretarget"
         bone_names = [n.name for n in glb().scene(ctx).meocap_bone_map.nodes]

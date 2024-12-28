@@ -51,9 +51,10 @@ class MeocapPanel(bpy.types.Panel):
         else:
             row.operator('meocap.connect', text='Connect', icon='UNLINKED')
 
+
         row = col.row(align=True)
         row.label(text="Performer")
-        row.prop(ctx.scene.meocap_state, "source_armature")
+        row.prop_search(ctx.scene.meocap_state, "source_armature", ctx.scene, "objects")
 
         row = col.row(align=True)
         if ctx.scene.meocap_state.is_recording:

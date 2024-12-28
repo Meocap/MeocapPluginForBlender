@@ -1,7 +1,13 @@
 import bpy
 from ..glb import glb
+
+
 def on_update_bind_bones(self, context):
     return on_update_skel(self, context)
+
+
+def get_source_armature(self, context):
+    pass
 
 
 def on_update_skel(self, context):
@@ -13,14 +19,17 @@ def on_update_skel(self, context):
     scene = glb().scene(context)
 
     am = scene.meocap_state.source_armature
-    source = bpy.data.objects.get(scene.meocap_state.source_armature)
+
+    source = scene.meocap_state.source_armature
     bones = None
-    if source and source.type == 'ARMATURE':
+
+    if source is not None and source.type == 'ARMATURE':
         bones: bpy.types.Armature = source.data.bones
 
     if am != "Null" and bones is not None:
         if len(scene.meocap_bone_map.nodes) == 24:
             nodes = scene.meocap_bone_map.nodes
+            node_names = [n.name for n in nodes]
             for index, node in enumerate(nodes):
                 parent_index = parent_bone[index]
                 children_bone = bones
@@ -31,19 +40,20 @@ def on_update_skel(self, context):
                         for bone in bones:
                             if bone.name == nodes[parent_index].name:
                                 children_bone = []
+
                                 def get_all_children(b):
                                     nonlocal children_bone
                                     children_bone = children_bone + [_ for _ in b.children]
                                     for child in b.children:
                                         get_all_children(child)
-                                get_all_children(bone)
 
+                                get_all_children(bone)
 
                 node.available_bones.clear()
                 for bone in children_bone:
-                    new_available = node.available_bones.add()
-                    new_available.name = bone.name
-
+                    if (bone.name not in node_names) or bone.name == node_names[index]:
+                        new_available = node.available_bones.add()
+                        new_available.name = bone.name
 
     return None
 
@@ -60,16 +70,27 @@ class MeocapRetargetNode(bpy.types.PropertyGroup):
 
 def get_armature_items(self, ctx):
     """动态获取场景中的骨架名称列表"""
-    armatures = [
-        (obj.name, obj.name, "Armature Object")
-        for obj in bpy.data.objects if obj.type == 'ARMATURE'
-    ]
-    return armatures if [("Null", "No Set", "Null Value")] + armatures else [("NONE", "None", "No armature available")]
+    armatures = []
+
+    # 遍历场景中的所有对象
+    for obj in bpy.data.objects:
+        if obj.type == 'ARMATURE':
+            name = str(obj.name.encode('utf-8').decode('utf-8'))
+            armatures.append((name, name, "Armature Object"))
+
+    if armatures:
+        return armatures
+    else:
+        return [("NONE", "None", "No armature available")]
 
 
 class MeocapRetargetMap(bpy.types.PropertyGroup):
     nodes: bpy.props.CollectionProperty(type=MeocapRetargetNode)
     version: bpy.props.StringProperty(name="Map Version")
+
+
+def filter_on_armatures(self, obj):
+    return obj.type == 'ARMATURE'
 
 
 class MeocapState(bpy.types.PropertyGroup):
@@ -80,11 +101,10 @@ class MeocapState(bpy.types.PropertyGroup):
         max=65535,
         min=0
     )
-    source_armature: bpy.props.EnumProperty(
+    source_armature: bpy.props.PointerProperty(
         name="",
-        description="Choose an armature from the scene",
-        items=get_armature_items,
-        update=on_update_skel
+        type=bpy.types.Object,
+        poll=filter_on_armatures
     )
     frame_id: bpy.props.IntProperty(
         name="",
@@ -93,8 +113,6 @@ class MeocapState(bpy.types.PropertyGroup):
         min=0
     )
     is_recording: bpy.props.BoolProperty(name="Recording")
-
-
 
 
 def register_types():

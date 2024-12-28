@@ -1,14 +1,31 @@
-name: 'publish_public_docs'
+name: 'publish_plugin'
 on:
-  workflow_dispatch:
   push:
-    branches: [ "main" ,"dev"]
+    tags:
+      - "*"
+  workflow_dispatch:
 jobs:
   upload-to-cloud:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Install jq and zip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq zip
+
+      - name: Read version from latest.json
+        id: read_version
+        run: |
+          VERSION=$(jq -r '.version' ./latest.json)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Create ZIP file with version
+        run: |
+          # Create the zip file with the version from latest.json
+          zip -r "MeocapPluginForBlender-${{ env.VERSION }}.zip" ./*
 
       - name: Install ossutil2
         run: |
@@ -18,13 +35,14 @@ jobs:
 
       - name: Upload files to Alibaba Cloud OSS
         env:
-          ALIYUN_ACCESS_KEY_ID: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
-          ALIYUN_ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
-          ALIYUN_BUCKET: ${{ secrets.ALIYUN_BUCKET }}
-          ALIYUN_OSS_ENDPOINT: ${{ secrets.ALIYUN_OSS_ENDPOINT }}
+          ALIYUN_ACCESS_KEY_ID: ${{ secrets.ALIYUN_PLUGIN_ACCESS_KEY_ID }}
+          ALIYUN_ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_PLUGIN_ACCESS_KEY_SECRET }}
+          ALIYUN_BUCKET: ${{ secrets.ALIYUN_PLUGIN_BUCKET }}
+          ALIYUN_OSS_ENDPOINT: ${{ secrets.ALIYUN_PLUGIN_OSS_ENDPOINT }}
         run: |
           # Configure ossutil2
           ossutil config -i $ALIYUN_ACCESS_KEY_ID -k $ALIYUN_ACCESS_KEY_SECRET -e $ALIYUN_OSS_ENDPOINT
 
           # Upload files to OSS
-          ossutil cp -r ./public/docs/ oss://$ALIYUN_BUCKET/docs/ --endpoint $ALIYUN_OSS_ENDPOINT
+          ossutil cp "MeocapPluginForBlender-${{ env.VERSION }}.zip" oss://$ALIYUN_BUCKET/plugins/blender/ --endpoint $ALIYUN_OSS_ENDPOINT
+          ossutil cp "latest.json" oss://$ALIYUN_BUCKET/plugins/blender/ --endpoint $ALIYUN_OSS_ENDPOINT

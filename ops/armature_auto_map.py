@@ -133,7 +133,7 @@ class AutoMapBoneVRMExt(bpy.types.Operator):
                          'chest', 'leftFoot', 'rightFoot', 'upperChest', 'leftToes', 'rightToes',
                          'neck', 'leftShoulder', 'rightShoulder', 'head', 'leftUpperArm', 'rightUpperArm',
                          'leftLowerArm', 'rightLowerArm', 'leftHand', 'rightHand']
-        source = bpy.data.objects.get(glb().scene(ctx).meocap_state.source_armature)
+        source = glb().scene(ctx).meocap_state.source_armature
         if source and source.type == 'ARMATURE':
             armature_data = source.data
             if getattr(armature_data, 'vrm_addon_extension') is not None:

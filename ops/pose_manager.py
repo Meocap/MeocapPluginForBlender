@@ -124,7 +124,7 @@ class PoseManager:
                                 root_bone.location = new_local_matrix.translation
 
     def load_recording(self, ctx, path, frames):
-        bone_names = [n.name for n in glb().scene(ctx).meocap_bone_map.nodes]
+        bone_names = [n.name for n in glb().scene(ctx).meocap_bone_map.bo]
 
         source_obj = ctx.scene.meocap_state.source_armature
         if source_obj is None:
@@ -155,10 +155,7 @@ class PoseManager:
                             new_pose[axis]
                         )
         # translation
-        root_bone_name = bone_names[0]
-        if source_obj.pose.bones.get(root_bone_name) is not None:
-            if source_obj.pose.bones.get(root_bone_name).parent is not None:
-                root_bone_name = source_obj.pose.bones.get(root_bone_name).parent.name
+        root_bone_name = self.root.name
 
         root_data_path = 'pose.bones["%s"].location' % root_bone_name
         trans_curves = [action.fcurves.new(data_path=root_data_path, index=i) for i in range(3)]
@@ -214,11 +211,7 @@ class PoseManager:
                             new_pose[axis]
                         )
         # translation
-        root_bone_name = bone_names[0]
-        if source_obj.pose.bones.get(root_bone_name) is not None:
-            if source_obj.pose.bones.get(root_bone_name).parent is not None:
-                root_bone_name = source_obj.pose.bones.get(root_bone_name).parent.name
-
+        root_bone_name = self.root.name
         root_data_path = 'pose.bones["%s"].location' % root_bone_name
         trans_curves = [action.fcurves.new(data_path=root_data_path, index=i) for i in range(3)]
 

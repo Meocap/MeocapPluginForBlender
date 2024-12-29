@@ -61,7 +61,7 @@ class ArmatureAutoMap(bpy.types.Operator):
         return bpy.data.objects.get(ctx.active_object.meocap_auto_map_source_armature) is not None
 
     def execute(self, ctx):
-        source = bpy.data.objects.get(ctx.active_object.rebocap_source_armature)
+        source = ctx.active_object.rebocap_source_armature
         if source and source.type == 'ARMATURE':
             armature_data: bpy.types.Armature = source.data
 

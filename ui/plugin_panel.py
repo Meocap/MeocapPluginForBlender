@@ -23,10 +23,10 @@ class MeocapPanel(bpy.types.Panel):
 
     def __init__(self):
         self.bones = [
-            "Pelvis", "L_UpLeg", "R_UpLeg", "Spine", "L_DownLeg", "R_DownLeg",
-            "Chest", "L_Foot*", "R_Foot*", "UpChest*", "L_Toe*", "R_Toe*",
-            "Neck*", "L_Shoulder*", "R_Shoulder*", "Head", "L_UpArm", "R_UpArm",
-            "L_DownArm", "R_DownArm", "L_Palm*", "R_Palm*", "L_Fingers*", "R_Fingers*",
+            "Pelvis(Hip)", "L_Thig", "R_Thig", "Spine1", "L_Leg", "R_Leg",
+            "Chest(Spine2)", "L_Foot", "R_Foot", "UpChest(Spine3)", "L_Toe", "R_Toe",
+            "Neck", "L_Collar", "R_Collar", "Head", "L_Shoulder", "R_Shoulder",
+            "L_Forearm", "R_Forearm", "L_Hand", "R_Hand", "L_Palm", "R_Palm",
         ]
         self.bones_map = ['' for _ in range(24)]
         self.center_bone = [0, 3, 6, 9, 12, 15]
@@ -50,7 +50,6 @@ class MeocapPanel(bpy.types.Panel):
             row.operator('meocap.disconnect', text='Disconnect', icon='LINKED')
         else:
             row.operator('meocap.connect', text='Connect', icon='UNLINKED')
-
 
         row = col.row(align=True)
         row.label(text="Performer")
@@ -95,6 +94,9 @@ class MeocapPanel(bpy.types.Panel):
             row = box.row(align=True)
             row.operator('meocap.export_retarget_config', text='Export Retarget Config', icon='EXPORT')
 
+            row = box.row(align=True)
+            row.prop(ctx.scene.meocap_state, "pure_input_mode")
+
             box.separator()
 
             row = box.row(align=True).split(factor=0.15, align=True)
@@ -108,7 +110,10 @@ class MeocapPanel(bpy.types.Panel):
                 idx = self.center_bone[i]
                 name = self.bones[idx]
                 column_label.label(text=name)
-                column_center.prop_search(bone_map.nodes[idx], "name", bone_map.nodes[idx], "available_bones")
+                if ctx.scene.meocap_state.pure_input_mode:
+                    column_center.prop(bone_map.nodes[idx], "name")
+                else:
+                    column_center.prop_search(bone_map.nodes[idx], "name", bone_map.nodes[idx], "available_bones")
                 column_lock.prop(bone_map.nodes[idx], "lock")
 
             row = box.row(align=True).split(factor=0.15, align=True)
@@ -132,9 +137,16 @@ class MeocapPanel(bpy.types.Panel):
 
                 column_label.label(text=name)
 
-                column_left.prop_search(bone_map.nodes[idx], "name", bone_map.nodes[idx], "available_bones")
+                if ctx.scene.meocap_state.pure_input_mode:
+                    column_left.prop(bone_map.nodes[idx], "name")
+                else:
+                    column_left.prop_search(bone_map.nodes[idx], "name", bone_map.nodes[idx], "available_bones")
+
+
                 column_left_lock.prop(bone_map.nodes[idx], "lock")
 
                 idx = idx + 1
-                column_right.prop_search(bone_map.nodes[idx], "name", bone_map.nodes[idx], "available_bones")
-                column_right_lock.prop(bone_map.nodes[idx], "lock")
+                if ctx.scene.meocap_state.pure_input_mode:
+                    column_right.prop(bone_map.nodes[idx], "name")
+                else:
+                    column_right.prop_search(bone_map.nodes[idx], "name", bone_map.nodes[idx], "available_bones")

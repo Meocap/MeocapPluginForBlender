@@ -95,6 +95,7 @@ def filter_on_armatures(self, obj):
 
 class MeocapState(bpy.types.PropertyGroup):
     has_connected: bpy.props.BoolProperty(name="Connected")
+    pure_input_mode: bpy.props.BoolProperty(name="Pure Input")
     bind_port: bpy.props.IntProperty(
         name="",
         default=14999,
@@ -104,7 +105,8 @@ class MeocapState(bpy.types.PropertyGroup):
     source_armature: bpy.props.PointerProperty(
         name="",
         type=bpy.types.Object,
-        poll=filter_on_armatures
+        poll=filter_on_armatures,
+        update=on_update_skel
     )
     frame_id: bpy.props.IntProperty(
         name="",

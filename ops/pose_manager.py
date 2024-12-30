@@ -124,7 +124,7 @@ class PoseManager:
                                 root_bone.location = new_local_matrix.translation
 
     def load_recording(self, ctx, path, frames):
-        bone_names = [n.name for n in glb().scene(ctx).meocap_bone_map.bo]
+        bone_names = [n.name for n in glb().scene(ctx).meocap_bone_map.nodes]
 
         source_obj = ctx.scene.meocap_state.source_armature
         if source_obj is None:

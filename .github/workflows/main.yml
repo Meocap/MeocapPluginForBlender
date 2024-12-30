@@ -46,3 +46,4 @@ jobs:
           # Upload files to OSS
           ossutil cp -f -u "MeocapPluginForBlender-${{ env.VERSION }}.zip" oss://$ALIYUN_BUCKET/plugins/blender/ --endpoint $ALIYUN_OSS_ENDPOINT
           ossutil cp -f -u "latest.json" oss://$ALIYUN_BUCKET/plugins/blender/ --endpoint $ALIYUN_OSS_ENDPOINT
+          ossutil cp -f -u "update_log.md" oss://$ALIYUN_BUCKET/plugins/blender/ --endpoint $ALIYUN_OSS_ENDPOINT

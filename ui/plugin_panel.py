@@ -23,10 +23,10 @@ class MeocapPanel(bpy.types.Panel):
 
     def __init__(self):
         self.bones = [
-            "Pelvis(Hip)", "L_Thig", "R_Thig", "Spine1", "L_Leg", "R_Leg",
-            "Chest(Spine2)", "L_Foot", "R_Foot", "UpChest(Spine3)", "L_Toe", "R_Toe",
-            "Neck", "L_Collar", "R_Collar", "Head", "L_Shoulder", "R_Shoulder",
-            "L_Forearm", "R_Forearm", "L_Hand", "R_Hand", "L_Palm", "R_Palm",
+            "Pelvis(Hips)", "L_UpperLeg", "R_UpperLeg", "Spine", "L_LowerLeg", "R_LowerLeg",
+            "Chest", "L_Foot", "R_Foot", "UpperChest", "L_Toes", "R_Toes",
+            "Neck", "L_Shoulder", "R_Shoulder", "Head", "L_UpperArm", "R_UpperArm",
+            "L_LowerArm", "R_LowerArm", "L_Hand", "R_Hand", "L_Palm", "R_Palm",
         ]
         self.bones_map = ['' for _ in range(24)]
         self.center_bone = [0, 3, 6, 9, 12, 15]

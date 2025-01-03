@@ -4,7 +4,7 @@ from typing import List, Optional
 import bpy
 from dataclasses import dataclass, field
 from ..glb import glb
-
+from ..core import armature_preset_items
 @dataclass
 class BoneChainNode:
     optional: bool
@@ -171,3 +171,18 @@ class AutoMapBoneClear(bpy.types.Operator):
                 nodes[i].name = ''
 
          return {'FINISHED'}
+
+class AutoMapApplyPresetConfig(bpy.types.Operator):
+    bl_idname = 'meocap.apply_preset_config'
+    bl_label = 'Apply'
+    def execute(self, ctx):
+        scene = glb().scene(ctx)
+        nodes = scene.meocap_bone_map.nodes
+        for config in armature_preset_items:
+            if config[0] != scene.meocap_state.preset_items:
+                continue
+            if len(nodes) == 24:
+                for i in range(22):
+                    nodes[i].name = config[4][i]
+
+        return {'FINISHED'}

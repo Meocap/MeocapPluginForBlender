@@ -93,7 +93,10 @@ class MeocapPanel(bpy.types.Panel):
             row = box.row(align=True)
             column = row.column(align=True)
             column.label(text="Config Preset:")
-
+            column = row.column(align=True)
+            column.prop(ctx.scene.meocap_state,"preset_items")
+            column = row.column(align=True)
+            column.operator('meocap.apply_preset_config', text='Apply', icon='IMPORT')
 
             row = box.row(align=True)
             row.prop(ctx.scene.meocap_state, "pure_input_mode")

@@ -1,7 +1,12 @@
+### 0.1.6
++ 更新了新功能，支持导入某些骨骼预设，现在支持 ``PMX MMD`` 和 ``Mixamo`` 的骨架
++ 临时使用，后面会尝试更好的实现
++ ![示例图](https://meocap-images.oss-cn-beijing.aliyuncs.com/20250103161647054.png)
++ 感谢 [乔治](https://space.bilibili.com/412411578)老师提出的修改意见
 ### 0.1.5
 + 更新了骨骼命名
 + 修复了打包方式
-+ 感谢 [王也道长OS](https://space.bilibili.com/317042327) 提出的修改意见
++ 感谢 [王也道长OS](https://space.bilibili.com/317042327) 老师提出的修改意见
 ### 0.1.4
 + 增加更新日志
 ### 0.1.3

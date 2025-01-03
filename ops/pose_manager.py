@@ -291,6 +291,8 @@ class MeocapDisconnect(bpy.types.Operator):
         return {'FINISHED'}
 
 
+
+
 POSE_ATTRS = [
     "pelvis",  # 骨盆
     "left_hip",  # 左大腿

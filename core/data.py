@@ -1,6 +1,6 @@
 armature_preset_items = [
-    ('mixamo', 'Mixamo',"Auto Rig by Adobe Mixamo", 'mixamorig', [
-        "mixamorig:Hips", "mixamorig:LeftUpLeg","mixamorig:RightUpLeg",
+    ('mixamo', 'Mixamo', "Auto Rig by Adobe Mixamo", 'mixamorig', [
+        "mixamorig:Hips", "mixamorig:LeftUpLeg", "mixamorig:RightUpLeg",
         "mixamorig:Spine",  # 3
         "mixamorig:LeftLeg", "mixamorig:RightLeg",
         "mixamorig:Spine1",  # 6
@@ -15,8 +15,8 @@ armature_preset_items = [
         "mixamorig:LeftForeArm", "mixamorig:RightForeArm",
         "mixamorig:LeftHand", "mixamorig:RightHand"
     ]),
-    ('pmx', 'PMX(MMD)',"Import from MMD Tools", '全ての親', [
-        "全ての親",
+    ('pmx', 'PMX(MMD)', "Import from MMD Tools", '全ての親', [
+        "腰",
         "足.L",
         "足.R",
         "センター",
@@ -40,4 +40,3 @@ armature_preset_items = [
         "手首.R"
     ])
 ]
-

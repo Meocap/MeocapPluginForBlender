@@ -73,8 +73,10 @@ class MeocapPanel(bpy.types.Panel):
 
         if True:
             box = layout.box()
+            box.label(text="NOTE: The model's rest pose must be T-POSE")
             box.label(text="Bind Bones", icon='ARMATURE_DATA')
             box.label(text="bones marked with an * are optional.")
+
 
             row = box.row(align=True)
             row.operator('meocap.auto_map_bone_vrm_ext', text='Auto Detect Bones(VRM Ext.)', icon='AUTO')
@@ -99,7 +101,10 @@ class MeocapPanel(bpy.types.Panel):
             column.operator('meocap.apply_preset_config', text='Apply', icon='IMPORT')
 
             row = box.row(align=True)
-            row.prop(ctx.scene.meocap_state, "pure_input_mode")
+            column = row.column(align=True)
+            column.prop(ctx.scene.meocap_state, "pure_input_mode")
+            column = row.column(align=True)
+            column.prop(ctx.scene.meocap_state, "lock_transition")
 
             box.separator()
 

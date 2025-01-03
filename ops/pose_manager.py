@@ -20,7 +20,7 @@ class PoseRootBone:
         self.matrix_global_2_root_inverse = mathutils.Matrix.Identity(4)
         self.matrix_root_2_hip_inverse = mathutils.Matrix.Identity(4)
         self.matrix_global_hip = mathutils.Matrix.Identity(4)
-        self.offset = mathutils.Vector([0,0,0])
+        self.offset = mathutils.Vector([0, 0, 0])
 
 
 def fill_all_pose(rots: List[mathutils.Quaternion], bone_names: List[str]):
@@ -69,21 +69,33 @@ class PoseManager:
         if not len(nodes) == 24:
             return
 
+        scene_obj_matrix_world = mathutils.Matrix.Identity(4)
+        for obj in bpy.context.scene.objects:
+            if obj.name == source_obj.name and obj.type == 'ARMATURE':
+                scene_obj_matrix_world = obj.matrix_world
+                print(f"Found Scene Object: {obj.name}")
+                break
+
+
         for i in range(22):
             node_name = nodes[i].name
             if node_name != "":
+                pose_bone = source_obj.pose.bones.get(node_name)
                 data_bone = source_obj.data.bones.get(node_name)
-                if data_bone is not None:
-                    self.bones[i].rest_matrix_to_world = data_bone.matrix_local.to_quaternion()
+                if (data_bone is not None) and (pose_bone is not None):
+                    pose_bone.rotation_mode = 'QUATERNION'
+                    self.bones[i].rest_matrix_to_world = scene_obj_matrix_world.to_quaternion() @ data_bone.matrix_local.to_quaternion()
                     self.bones[i].rest_matrix_from_world = self.bones[i].rest_matrix_to_world.inverted()
                     if i == 0:
                         cur_root_bone = data_bone
                         while cur_root_bone.parent is not None:
                             cur_root_bone = cur_root_bone.parent
                         self.root.name = cur_root_bone.name
-                        self.root.matrix_root_2_hip_inverse = (data_bone.matrix_local.inverted() @ cur_root_bone.matrix_local).inverted()
-                        self.root.matrix_global_2_root_inverse = (source_obj.matrix_world @ cur_root_bone.matrix_local).inverted()
-                        self.root.matrix_global_hip = source_obj.matrix_world @ cur_root_bone.matrix_local
+                        self.root.matrix_root_2_hip_inverse = (
+                                    cur_root_bone.matrix_local.inverted() @ data_bone.matrix_local).inverted()
+                        self.root.matrix_global_2_root_inverse = (
+                                    scene_obj_matrix_world @ cur_root_bone.matrix_local).inverted()
+                        self.root.matrix_global_hip = scene_obj_matrix_world @ data_bone.matrix_local
                         self.trans_offset = cur_root_bone.matrix_local.translation
                         print("Tran offset:")
                         print(self.trans_offset)
@@ -117,7 +129,7 @@ class PoseManager:
                         perform_bone.rotation_quaternion = new_pose
                         if i == 0 and self.root.name != '':
                             root_bone = source_obj.pose.bones.get(self.root.name)
-                            if root_bone is not None:
+                            if (root_bone is not None) and (not scene.meocap_state.lock_transition):
                                 new_global_hip: mathutils.Matrix = self.root.matrix_global_hip
                                 new_global_hip.translation = trans + self.trans_offset
                                 new_local_matrix = self.root.matrix_global_2_root_inverse @ new_global_hip @ self.root.matrix_root_2_hip_inverse
@@ -162,14 +174,17 @@ class PoseManager:
 
         for c in trans_curves:
             c.keyframe_points.add(len(frames))
-        for frame_i, frame in enumerate(frames):
-            trans = frame.translation
-            trans = [trans.x, trans.y, trans.z]
-            for axis in range(3):
-                trans_curves[axis].keyframe_points[frame_i].co = (
-                    frame_i,
-                    trans[axis]
-                )
+
+        scene = glb().scene(ctx)
+        if not scene.meocap_state.lock_transition:
+            for frame_i, frame in enumerate(frames):
+                trans = frame.translation
+                trans = [trans.x, trans.y, trans.z]
+                for axis in range(3):
+                    trans_curves[axis].keyframe_points[frame_i].co = (
+                        frame_i,
+                        trans[axis]
+                    )
 
         source_obj.animation_data_create()
         source_obj.animation_data.action = action
@@ -217,14 +232,17 @@ class PoseManager:
 
         for c in trans_curves:
             c.keyframe_points.add(len(frames))
-        for frame_i, frame in enumerate(frames):
-            trans = frame.translation
-            trans = [trans.x, trans.y, trans.z]
-            for axis in range(3):
-                trans_curves[axis].keyframe_points[frame_i].co = (
-                    frame_i,
-                    trans[axis]
-                )
+
+        scene = glb().scene(ctx)
+        if not scene.meocap_state.lock_transition:
+            for frame_i, frame in enumerate(frames):
+                trans = frame.translation
+                trans = [trans.x, trans.y, trans.z]
+                for axis in range(3):
+                    trans_curves[axis].keyframe_points[frame_i].co = (
+                        frame_i,
+                        trans[axis]
+                    )
 
         source_obj.animation_data_create()
         source_obj.animation_data.action = action
@@ -289,8 +307,6 @@ class MeocapDisconnect(bpy.types.Operator):
         ctx.window_manager.event_timer_remove(meocap_timer)
         scene.meocap_state.has_connected = False
         return {'FINISHED'}
-
-
 
 
 POSE_ATTRS = [

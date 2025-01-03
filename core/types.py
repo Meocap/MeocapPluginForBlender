@@ -102,6 +102,7 @@ def filter_on_armatures(self, obj):
 class MeocapState(bpy.types.PropertyGroup):
     has_connected: bpy.props.BoolProperty(name="Connected")
     pure_input_mode: bpy.props.BoolProperty(name="Pure Input")
+    lock_transition: bpy.props.BoolProperty(name="Lock Transition")
     bind_port: bpy.props.IntProperty(
         name="",
         default=14999,

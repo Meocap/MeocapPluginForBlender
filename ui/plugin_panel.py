@@ -80,10 +80,6 @@ class MeocapPanel(bpy.types.Panel):
             row.operator('meocap.auto_map_bone_vrm_ext', text='Auto Detect Bones(VRM Ext.)', icon='AUTO')
 
             row = box.row(align=True)
-            row.operator('meocap.auto_map_bone_vrm_ext', text='Auto Detect Bones(Standard rig with 24 bones)',
-                         icon='AUTO')
-
-            row = box.row(align=True)
             row.operator('meocap.auto_map_bone_clear', text='Clear Bones', icon='BONE_DATA')
 
             box.separator()
@@ -93,6 +89,11 @@ class MeocapPanel(bpy.types.Panel):
 
             row = box.row(align=True)
             row.operator('meocap.export_retarget_config', text='Export Retarget Config', icon='EXPORT')
+
+            row = box.row(align=True)
+            column = row.column(align=True)
+            column.label(text="Config Preset:")
+
 
             row = box.row(align=True)
             row.prop(ctx.scene.meocap_state, "pure_input_mode")

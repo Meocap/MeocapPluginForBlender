@@ -67,6 +67,40 @@ class MeocapRetargetNode(bpy.types.PropertyGroup):
     lock: bpy.props.BoolProperty(name="")
     available_bones: bpy.props.CollectionProperty(type=StringItem)
 
+armature_items = [
+    ('mixamo','Mixamo','mixamorig',[
+        "mixamorig:Hips","mixamorig:LeftUpLeg",
+        "mixamorig:Spine", # 3
+        "mixamorig:RightUpLeg","mixamorig:LeftLeg","mixamorig:RightLeg",
+        "mixamorig:Spine1", # 6
+        "mixamorig:LeftFoot", # 7
+        "mixamorig:RightFoot", # 8
+        "mixamorig:Spine2" # 9,
+        "mixamorig:LeftToeBase","mixamorig:RightToeBase",
+        "mixamorig:Neck",
+        "mixamorig:LeftShoulder","mixamorig:RightShoulder",
+        "mixamorig:Head",
+        "mixamorig:LeftArm","mixamorig:RightArm"
+        "mixamorig:LeftForeArm","mixamorig:RightForeArm",
+        "mixamorig:LeftHand","mixamorig:RightHand"
+    ]),
+    ('pmx', 'PMX(MMD)', 'mixamo', [
+        "mixamorig:Hips", "mixamorig:LeftUpLeg",
+        "mixamorig:Spine",  # 3
+        "mixamorig:RightUpLeg", "mixamorig:LeftLeg", "mixamorig:RightLeg",
+        "mixamorig:Spine1",  # 6
+        "mixamorig:LeftFoot",  # 7
+        "mixamorig:RightFoot",  # 8
+        "mixamorig:Spine2"  # 9,
+        "mixamorig:LeftToeBase", "mixamorig:RightToeBase",
+        "mixamorig:Neck",
+        "mixamorig:LeftShoulder", "mixamorig:RightShoulder",
+        "mixamorig:Head",
+        "mixamorig:LeftArm", "mixamorig:RightArm"
+                             "mixamorig:LeftForeArm", "mixamorig:RightForeArm",
+        "mixamorig:LeftHand", "mixamorig:RightHand"
+    ])
+]
 
 def get_armature_items(self, ctx):
     """动态获取场景中的骨架名称列表"""
@@ -82,6 +116,11 @@ def get_armature_items(self, ctx):
         return armatures
     else:
         return [("NONE", "None", "No armature available")]
+
+
+class get_preset_items():
+
+    return []
 
 
 class MeocapRetargetMap(bpy.types.PropertyGroup):
@@ -113,6 +152,10 @@ class MeocapState(bpy.types.PropertyGroup):
         default=0,
         max=1048576,
         min=0
+    )
+    preset_items: bpy.props.EnumProperty(
+        name="",
+
     )
     is_recording: bpy.props.BoolProperty(name="Recording")
 

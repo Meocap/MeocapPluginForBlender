@@ -1,3 +1,4 @@
 from .armature_auto_map import ArmatureAutoMap, AutoMapBoneVRMExt, AutoMapBoneClear,AutoMapApplyPresetConfig
 from .retarget_config import CreateRetargetConfig
 from .pose_manager import MeocapImportRetargetConfig,MeocapExportRetargetConfig,PoseManager, MeocapConnect, MeocapDisconnect,MeocapLoadRecording, create_pose_manager, stop_all,MeocapStartRecording,MeocapEndRecording
+from .plugin import MeocapOpenURL

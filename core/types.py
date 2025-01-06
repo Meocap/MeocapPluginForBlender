@@ -2,6 +2,7 @@ import bpy
 from ..glb import glb
 from .data import armature_preset_items
 
+
 def on_update_bind_bones(self, context):
     return on_update_skel(self, context)
 
@@ -68,7 +69,6 @@ class MeocapRetargetNode(bpy.types.PropertyGroup):
     available_bones: bpy.props.CollectionProperty(type=StringItem)
 
 
-
 def get_armature_items(self, ctx):
     """动态获取场景中的骨架名称列表"""
     armatures = []
@@ -85,9 +85,15 @@ def get_armature_items(self, ctx):
         return [("NONE", "None", "No armature available")]
 
 
-def get_preset_items(self, ctx):
+scale_translation_items = [
+    ("1x", "1x", "1x (NoScale)"),
+    ("100x", "100x", "100x"),
+    ("0.01x", "0.01x", "0.01x")
+]
 
-    return [(t[0],t[1],t[2]) for t in armature_preset_items]
+
+def get_preset_items(self, ctx):
+    return [(t[0], t[1], t[2]) for t in armature_preset_items]
 
 
 class MeocapRetargetMap(bpy.types.PropertyGroup):
@@ -120,6 +126,10 @@ class MeocapState(bpy.types.PropertyGroup):
         default=0,
         max=1048576,
         min=0
+    )
+    scale_trans: bpy.props.EnumProperty(
+        name="Translation Scale",
+        items=scale_translation_items
     )
     preset_items: bpy.props.EnumProperty(
         name="",

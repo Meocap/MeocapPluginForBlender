@@ -9,8 +9,8 @@ bl_info = {
     "name": "Meocap",
     "author": "Meocap Tech",
     "description": "",
-    "blender": (3, 0, 0),
-    "version": (0, 1, '6 (BETA)'),
+    "blender": (4, 0, 0),
+    "version": (0, 1, '8 (BETA)'),
     "location": "",
     "warning": "",
     "category": "Meocap"
@@ -33,7 +33,8 @@ class_list = [
     ops.MeocapExportRetargetConfig,
     ops.MeocapStartRecording,
     ops.MeocapEndRecording,
-    ops.AutoMapApplyPresetConfig
+    ops.AutoMapApplyPresetConfig,
+    ops.MeocapOpenURL
 ]
 
 

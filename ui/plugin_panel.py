@@ -1,4 +1,31 @@
+import threading
+
 import bpy
+import json
+import os
+
+import requests
+
+version = "0.0.0"
+latest_version = "0.0.0"
+
+try:
+    fn = os.path.join(os.path.join(os.path.dirname(os.path.dirname(__file__)), "docs"), "latest.json")
+    with open(fn, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    version = data['version']
+except:
+    pass
+
+
+def fetch_version_json():
+    global latest_version
+    response = requests.get("https://meocap-plugin-files.oss-cn-beijing.aliyuncs.com/plugins/blender/docs/latest.json")
+    latest_version = response.json()["version"]
+
+
+
+threading.Thread(target=fetch_version_json).start()
 
 
 def get_armature_bones(ctx):
@@ -33,10 +60,21 @@ class MeocapPanel(bpy.types.Panel):
         self.left_bone = [1, 4, 7, 10, 13, 16, 18, 20]
         self.right_bone = [2, 5, 8, 11, 14, 17, 19, 21]
         self.side_names = [self.bones[i][2:] for i in self.left_bone]
+        self.version = version
+        self.latest_version = latest_version
 
     def draw(self, ctx):
         layout = self.layout
         col = layout.column()
+
+        row = col.row(align=True)
+        row.label(text="Now plugin version: " + self.version)
+        row = col.row(align=True)
+        row.label(text="Latest plugin version: " + self.latest_version)
+
+        if self.latest_version != self.version:
+            row = col.row(align=True)
+            row.operator("meocap.open_plugins",text="Update Available!!!",icon='PINNED')
 
         row = col.row(align=True)
         row.label(text="Source Port")
@@ -77,7 +115,6 @@ class MeocapPanel(bpy.types.Panel):
             box.label(text="Bind Bones", icon='ARMATURE_DATA')
             box.label(text="bones marked with an * are optional.")
 
-
             row = box.row(align=True)
             row.operator('meocap.auto_map_bone_vrm_ext', text='Auto Detect Bones(VRM Ext.)', icon='AUTO')
 
@@ -96,7 +133,7 @@ class MeocapPanel(bpy.types.Panel):
             column = row.column(align=True)
             column.label(text="Config Preset:")
             column = row.column(align=True)
-            column.prop(ctx.scene.meocap_state,"preset_items")
+            column.prop(ctx.scene.meocap_state, "preset_items")
             column = row.column(align=True)
             column.operator('meocap.apply_preset_config', text='Apply', icon='IMPORT')
 
@@ -105,7 +142,8 @@ class MeocapPanel(bpy.types.Panel):
             column.prop(ctx.scene.meocap_state, "pure_input_mode")
             column = row.column(align=True)
             column.prop(ctx.scene.meocap_state, "lock_transition")
-
+            row = box.row(align=True)
+            row.prop(ctx.scene.meocap_state, "scale_trans")
             box.separator()
 
             row = box.row(align=True).split(factor=0.15, align=True)
@@ -113,7 +151,7 @@ class MeocapPanel(bpy.types.Panel):
             column_label = row.column(align=True)
             column_center = row.column(align=True)
 
-            column_lock = row.column()
+            # column_lock = row.column()
 
             for i in range(len(self.center_bone)):
                 idx = self.center_bone[i]
@@ -123,22 +161,22 @@ class MeocapPanel(bpy.types.Panel):
                     column_center.prop(bone_map.nodes[idx], "name")
                 else:
                     column_center.prop_search(bone_map.nodes[idx], "name", bone_map.nodes[idx], "available_bones")
-                column_lock.prop(bone_map.nodes[idx], "lock")
+                # column_lock.prop(bone_map.nodes[idx], "lock")
 
-            row = box.row(align=True).split(factor=0.15, align=True)
+            row = box.row().split(factor=0.15)
 
             column_label = row.column(align=True)
-            column_left = row.column(align=True)
+            column_left = row.column()
 
-            column_left_lock = row.column(align=True)
+            # column_left_lock = row.column(align=True)
 
-            column_right = row.column(align=True)
-            column_right_lock = row.column(align=True)
+            column_right = row.column()
+            # column_right_lock = row.column(align=True)
             column_label.label(text="")
             column_left.label(text="Left")
             column_right.label(text="Right")
-            column_left_lock.label(text="")
-            column_right_lock.label(text="")
+            # column_left_lock.label(text="")
+            # column_right_lock.label(text="")
 
             for i in range(len(self.side_names)):
                 idx = self.left_bone[i]
@@ -151,8 +189,7 @@ class MeocapPanel(bpy.types.Panel):
                 else:
                     column_left.prop_search(bone_map.nodes[idx], "name", bone_map.nodes[idx], "available_bones")
 
-
-                column_left_lock.prop(bone_map.nodes[idx], "lock")
+                # column_left_lock.prop(bone_map.nodes[idx], "lock")
 
                 idx = idx + 1
                 if ctx.scene.meocap_state.pure_input_mode:

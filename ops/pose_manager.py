@@ -76,7 +76,6 @@ class PoseManager:
                 print(f"Found Scene Object: {obj.name}")
                 break
 
-
         for i in range(22):
             node_name = nodes[i].name
             if node_name != "":
@@ -84,7 +83,8 @@ class PoseManager:
                 data_bone = source_obj.data.bones.get(node_name)
                 if (data_bone is not None) and (pose_bone is not None):
                     pose_bone.rotation_mode = 'QUATERNION'
-                    self.bones[i].rest_matrix_to_world = scene_obj_matrix_world.to_quaternion() @ data_bone.matrix_local.to_quaternion()
+                    self.bones[
+                        i].rest_matrix_to_world = scene_obj_matrix_world.to_quaternion() @ data_bone.matrix_local.to_quaternion()
                     self.bones[i].rest_matrix_from_world = self.bones[i].rest_matrix_to_world.inverted()
                     if i == 0:
                         cur_root_bone = data_bone
@@ -92,13 +92,13 @@ class PoseManager:
                             cur_root_bone = cur_root_bone.parent
                         self.root.name = cur_root_bone.name
                         self.root.matrix_root_2_hip_inverse = (
-                                    cur_root_bone.matrix_local.inverted() @ data_bone.matrix_local).inverted()
+                                cur_root_bone.matrix_local.inverted() @ data_bone.matrix_local).inverted()
                         self.root.matrix_global_2_root_inverse = (
-                                    scene_obj_matrix_world @ cur_root_bone.matrix_local).inverted()
+                                scene_obj_matrix_world @ cur_root_bone.matrix_local).inverted()
                         self.root.matrix_global_hip = scene_obj_matrix_world @ data_bone.matrix_local
-                        self.trans_offset = cur_root_bone.matrix_local.translation
-                        print("Tran offset:")
-                        print(self.trans_offset)
+
+                        self.trans_offset = mathutils.Vector(
+                            [self.root.matrix_global_hip.translation.x, self.root.matrix_global_hip.translation.y, self.root.matrix_global_hip.translation.z])
 
         self.has_init_bones = True
 
@@ -112,6 +112,11 @@ class PoseManager:
             frame = self.sdk.get_last_frame()
             if frame is not None:
                 scene = glb().scene(ctx)
+                scale = 1.0
+                if scene.meocap_state.scale_trans == "100x":
+                    scale = 100.0
+                elif scene.meocap_state.scale_trans == "0.01x":
+                    scale = 0.01
                 if scene.meocap_state.is_recording:
                     self.recordings.append(frame)
                 nodes = scene.meocap_bone_map.nodes
@@ -133,7 +138,9 @@ class PoseManager:
                                 new_global_hip: mathutils.Matrix = self.root.matrix_global_hip
                                 new_global_hip.translation = trans + self.trans_offset
                                 new_local_matrix = self.root.matrix_global_2_root_inverse @ new_global_hip @ self.root.matrix_root_2_hip_inverse
+                                new_local_matrix.translation *= scale
                                 root_bone.location = new_local_matrix.translation
+
 
     def load_recording(self, ctx, path, frames):
         bone_names = [n.name for n in glb().scene(ctx).meocap_bone_map.nodes]

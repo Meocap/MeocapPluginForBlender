@@ -27,6 +27,19 @@ jobs:
           # Create the zip file with the version from latest.json
           curl -L https://github.com/Meocap/MeocapPluginForBlender/archive/refs/heads/main.zip -o "MeocapPluginForBlender-${{ env.VERSION }}.zip"
 
+      - name: Unzip downloaded file
+        run: |
+          unzip "MeocapPluginForBlender-${{ env.VERSION }}.zip" -d "MeocapPluginForBlender-${{ env.VERSION }}"
+
+      - name: Rename folder
+        run: |
+          mv "MeocapPluginForBlender-${{ env.VERSION }}/MeocapPluginForBlender-main" "MeocapPluginForBlender-${{ env.VERSION }}/MeocapPluginForBlender"
+
+      - name: Recompress folder into a new ZIP file
+        run: |
+          cd "MeocapPluginForBlender-${{ env.VERSION }}"
+          zip -r "MeocapPluginForBlender-${{ env.VERSION }}.zip" "MeocapPluginForBlender"
+
       - name: Install ossutil2
         run: |
           wget https://gosspublic.alicdn.com/ossutil/1.7.6/ossutil64 -O ossutil

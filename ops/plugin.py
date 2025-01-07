@@ -3,6 +3,7 @@ import sys
 
 import bpy
 
+
 def open_url(url):
     if sys.platform == "win32":  # Windows
         os.system(f"start {url}")
@@ -12,6 +13,8 @@ def open_url(url):
         os.system(f"xdg-open {url}")
     else:
         print("Unsupported OS")
+
+
 class MeocapOpenURL(bpy.types.Operator):
     bl_idname = 'meocap.open_plugins'
     bl_label = 'Update Available!!!'

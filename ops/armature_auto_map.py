@@ -5,8 +5,6 @@ import bpy
 from dataclasses import dataclass, field
 from ..glb import glb
 from ..core import armature_preset_items
-
-
 @dataclass
 class BoneChainNode:
     optional: bool
@@ -58,7 +56,6 @@ VRM_BONE_CHAIN = [
 class ArmatureAutoMap(bpy.types.Operator):
     bl_idname = "meocap.auto_map_bone"
     bl_label = "Auto Animate Map"
-
     @classmethod
     def poll(cls, ctx):
         return bpy.data.objects.get(ctx.active_object.meocap_auto_map_source_armature) is not None
@@ -120,9 +117,8 @@ class ArmatureAutoMap(bpy.types.Operator):
                     print(map_list)
                     return {'FINISHED'}
 
+
         return {'FINISHED'}
-
-
 class AutoMapBoneVRMExt(bpy.types.Operator):
     bl_idname = 'meocap.auto_map_bone_vrm_ext'
     bl_label = 'Auto Map Bone'
@@ -132,17 +128,7 @@ class AutoMapBoneVRMExt(bpy.types.Operator):
         return True
 
     def execute(self, ctx):
-        all_names = (
-        'hips', 'spine', 'chest', 'upperChest', 'neck', 'head', 'leftEye', 'rightEye', 'jaw', 'leftUpperLeg',
-        'leftLowerLeg', 'leftFoot', 'leftToes', 'rightUpperLeg', 'rightLowerLeg', 'rightFoot', 'rightToes',
-        'leftShoulder', 'leftUpperArm', 'leftLowerArm', 'leftHand', 'rightShoulder', 'rightUpperArm', 'rightLowerArm',
-        'rightHand', 'leftThumbProximal', 'leftThumbIntermediate', 'leftThumbDistal', 'leftIndexProximal',
-        'leftIndexIntermediate', 'leftIndexDistal', 'leftMiddleProximal', 'leftMiddleIntermediate', 'leftMiddleDistal',
-        'leftRingProximal', 'leftRingIntermediate', 'leftRingDistal', 'leftLittleProximal', 'leftLittleIntermediate',
-        'leftLittleDistal', 'rightThumbProximal', 'rightThumbIntermediate', 'rightThumbDistal', 'rightIndexProximal',
-        'rightIndexIntermediate', 'rightIndexDistal', 'rightMiddleProximal', 'rightMiddleIntermediate',
-        'rightMiddleDistal', 'rightRingProximal', 'rightRingIntermediate', 'rightRingDistal', 'rightLittleProximal',
-        'rightLittleIntermediate', 'rightLittleDistal')
+        all_names = ('hips', 'spine', 'chest', 'upperChest', 'neck', 'head', 'leftEye', 'rightEye', 'jaw', 'leftUpperLeg', 'leftLowerLeg', 'leftFoot', 'leftToes', 'rightUpperLeg', 'rightLowerLeg', 'rightFoot', 'rightToes', 'leftShoulder', 'leftUpperArm', 'leftLowerArm', 'leftHand', 'rightShoulder', 'rightUpperArm', 'rightLowerArm', 'rightHand', 'leftThumbProximal', 'leftThumbIntermediate', 'leftThumbDistal', 'leftIndexProximal', 'leftIndexIntermediate', 'leftIndexDistal', 'leftMiddleProximal', 'leftMiddleIntermediate', 'leftMiddleDistal', 'leftRingProximal', 'leftRingIntermediate', 'leftRingDistal', 'leftLittleProximal', 'leftLittleIntermediate', 'leftLittleDistal', 'rightThumbProximal', 'rightThumbIntermediate', 'rightThumbDistal', 'rightIndexProximal', 'rightIndexIntermediate', 'rightIndexDistal', 'rightMiddleProximal', 'rightMiddleIntermediate', 'rightMiddleDistal', 'rightRingProximal', 'rightRingIntermediate', 'rightRingDistal', 'rightLittleProximal', 'rightLittleIntermediate', 'rightLittleDistal')
         vrm_bone_list = ['hips', 'leftUpperLeg', 'rightUpperLeg', 'spine', 'leftLowerLeg', 'rightLowerLeg',
                          'chest', 'leftFoot', 'rightFoot', 'upperChest', 'leftToes', 'rightToes',
                          'neck', 'leftShoulder', 'rightShoulder', 'head', 'leftUpperArm', 'rightUpperArm',
@@ -179,18 +165,16 @@ class AutoMapBoneClear(bpy.types.Operator):
 
     def execute(self, ctx):
 
-        nodes = ctx.scene.meocap_bone_map.nodes
-        if len(nodes) == 24:
-            for i in range(24):
+         nodes = ctx.scene.meocap_bone_map.nodes
+         if len(nodes) == 24:
+             for i in range(24):
                 nodes[i].name = ''
 
-        return {'FINISHED'}
-
+         return {'FINISHED'}
 
 class AutoMapApplyPresetConfig(bpy.types.Operator):
     bl_idname = 'meocap.apply_preset_config'
     bl_label = 'Apply'
-
     def execute(self, ctx):
         scene = glb().scene(ctx)
         nodes = scene.meocap_bone_map.nodes

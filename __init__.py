@@ -9,7 +9,7 @@ bl_info = {
     "name": "Meocap",
     "author": "Meocap Tech",
     "description": "",
-    "blender": (3, 0, 0),
+    "blender": (4, 0, 0),
     "version": (0, 1, '8 (BETA)'),
     "location": "",
     "warning": "",

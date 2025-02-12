@@ -98,7 +98,8 @@ class PoseManager:
                         self.root.matrix_global_hip = scene_obj_matrix_world @ data_bone.matrix_local
 
                         self.trans_offset = mathutils.Vector(
-                            [self.root.matrix_global_hip.translation.x, self.root.matrix_global_hip.translation.y, self.root.matrix_global_hip.translation.z])
+                            [self.root.matrix_global_hip.translation.x, self.root.matrix_global_hip.translation.y,
+                             self.root.matrix_global_hip.translation.z])
 
         self.has_init_bones = True
 
@@ -108,6 +109,14 @@ class PoseManager:
             return
         if not self.has_init_bones:
             self.init_bones(ctx)
+
+        scene_obj_matrix_world = mathutils.Matrix.Identity(4)
+        for obj in bpy.context.scene.objects:
+            if obj.name == source_obj.name and obj.type == 'ARMATURE':
+                scene_obj_matrix_world = obj.matrix_world
+                print(f"Found Scene Object: {obj.name}")
+                break
+
         if self.has_init_bones:
             frame = self.sdk.get_last_frame()
             if frame is not None:
@@ -126,21 +135,29 @@ class PoseManager:
                 loc_rots = [j.loc_rot for j in frame.joints]
                 loc_rots = fill_all_pose(loc_rots, bone_names)
                 trans = frame.translation
+
                 for i in range(22):
                     perform_bone = source_obj.pose.bones.get(bone_names[i])
+                    data_bone = source_obj.data.bones.get(bone_names[i])
                     if perform_bone is not None:
+                        perform_bone.rotation_mode = 'QUATERNION'
                         new_pose = self.bones[i].rest_matrix_from_world @ loc_rots[i] @ self.bones[
                             i].rest_matrix_to_world
                         perform_bone.rotation_quaternion = new_pose
-                        if i == 0 and self.root.name != '':
-                            root_bone = source_obj.pose.bones.get(self.root.name)
-                            if (root_bone is not None) and (not scene.meocap_state.lock_transition):
-                                new_global_hip: mathutils.Matrix = self.root.matrix_global_hip
-                                new_global_hip.translation = trans + self.trans_offset
-                                new_local_matrix = self.root.matrix_global_2_root_inverse @ new_global_hip @ self.root.matrix_root_2_hip_inverse
-                                new_local_matrix.translation *= scale
-                                root_bone.location = new_local_matrix.translation
+                        if i == 0:
+                            cur_root_bone = perform_bone
+                            while cur_root_bone.parent is not None:
+                                cur_root_bone = cur_root_bone.parent
+                            self.root.name = cur_root_bone.name
+                            self.root.matrix_root_2_hip_inverse = (
+                                    cur_root_bone.matrix_local.inverted() @ data_bone.matrix_local).inverted()
+                            self.root.matrix_global_2_root_inverse = (
+                                    scene_obj_matrix_world @ cur_root_bone.matrix_local).inverted()
+                            self.root.matrix_global_hip = scene_obj_matrix_world @ data_bone.matrix_local
 
+                            self.trans_offset = mathutils.Vector(
+                                [self.root.matrix_global_hip.translation.x, self.root.matrix_global_hip.translation.y,
+                                 self.root.matrix_global_hip.translation.z])
 
     def load_recording(self, ctx, path, frames):
         bone_names = [n.name for n in glb().scene(ctx).meocap_bone_map.nodes]

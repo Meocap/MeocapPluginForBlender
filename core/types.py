@@ -91,6 +91,17 @@ scale_translation_items = [
     ("0.01x", "0.01x", "0.01x")
 ]
 
+target_fps_items = [
+    ("60", "60", "60"),
+    ("50", "50", "50"),
+    ("30", "30", "30"),
+    ("25", "25", "25"),
+    ("24", "24", "24"),
+    ("12", "12", "12"),
+    ("5", "5", "5"),
+    ("1", "1", "1")
+]
+
 
 def get_preset_items(self, ctx):
     return [(t[0], t[1], t[2]) for t in armature_preset_items]
@@ -130,6 +141,10 @@ class MeocapState(bpy.types.PropertyGroup):
     scale_trans: bpy.props.EnumProperty(
         name="Translation Scale",
         items=scale_translation_items
+    )
+    fps_rebuild: bpy.props.EnumProperty(
+        name="",
+        items=target_fps_items
     )
     preset_items: bpy.props.EnumProperty(
         name="",

@@ -3,7 +3,7 @@ from typing import Optional, List
 
 import mathutils
 import json
-from ..meocap_sdk import MeocapSDK, Addr, ErrorType, FrameReader, MeoFrame
+from ..meocap_sdk import MeocapSDK, Addr, ErrorType, FrameReader, MeoFrame, Joint
 from ..glb import glb
 
 
@@ -49,6 +49,9 @@ class PoseManager:
         self.has_init_bones = False
         self.recordings = []
         self.root = PoseRootBone()
+        self.target_framerate = 60
+        self.last_recording_interval: float = 0
+        self.last_frame: Optional[MeoFrame] = None
 
     def connect(self, port) -> bool:
         self.sdk.addr.port = port
@@ -103,6 +106,15 @@ class PoseManager:
 
         self.has_init_bones = True
 
+    def get_scale(self, ctx):
+        scene = glb().scene(ctx)
+        scale = 1.0
+        if scene.meocap_state.scale_trans == "100x":
+            scale = 100.0
+        elif scene.meocap_state.scale_trans == "0.01x":
+            scale = 0.01
+        return scale
+
     def recv_and_perform(self, ctx):
         source_obj = ctx.scene.meocap_state.source_armature
         if source_obj is None:
@@ -120,14 +132,18 @@ class PoseManager:
         if self.has_init_bones:
             frame = self.sdk.get_last_frame()
             if frame is not None:
+
                 scene = glb().scene(ctx)
-                scale = 1.0
-                if scene.meocap_state.scale_trans == "100x":
-                    scale = 100.0
-                elif scene.meocap_state.scale_trans == "0.01x":
-                    scale = 0.01
+                scale = self.get_scale(ctx)
+                rec = self.get_new_record(ctx, frame)
+
                 if scene.meocap_state.is_recording:
-                    self.recordings.append(frame)
+                    if rec is not None:
+                        self.recordings.append(rec)
+
+                if rec is None:
+                    return
+
                 nodes = scene.meocap_bone_map.nodes
                 scene.meocap_state.frame_id = frame.frame_id
                 bone_names = [n.name for n in nodes]
@@ -138,80 +154,81 @@ class PoseManager:
 
                 for i in range(22):
                     perform_bone = source_obj.pose.bones.get(bone_names[i])
-                    data_bone = source_obj.data.bones.get(bone_names[i])
                     if perform_bone is not None:
                         perform_bone.rotation_mode = 'QUATERNION'
                         new_pose = self.bones[i].rest_matrix_from_world @ loc_rots[i] @ self.bones[
                             i].rest_matrix_to_world
                         perform_bone.rotation_quaternion = new_pose
-                        if i == 0:
-                            cur_root_bone = perform_bone
-                            while cur_root_bone.parent is not None:
-                                cur_root_bone = cur_root_bone.parent
-                            self.root.name = cur_root_bone.name
-                            self.root.matrix_root_2_hip_inverse = (
-                                    cur_root_bone.matrix_local.inverted() @ data_bone.matrix_local).inverted()
-                            self.root.matrix_global_2_root_inverse = (
-                                    scene_obj_matrix_world @ cur_root_bone.matrix_local).inverted()
-                            self.root.matrix_global_hip = scene_obj_matrix_world @ data_bone.matrix_local
+                        if i == 0 and self.root.name != '':
+                            root_bone = source_obj.pose.bones.get(self.root.name)
+                            if (root_bone is not None) and (not scene.meocap_state.lock_transition):
+                                new_global_hip: mathutils.Matrix = self.root.matrix_global_hip
+                                new_global_hip.translation = trans + self.trans_offset
+                                new_local_matrix = self.root.matrix_global_2_root_inverse @ new_global_hip @ self.root.matrix_root_2_hip_inverse
+                                new_local_matrix.translation *= scale
+                                root_bone.location = new_local_matrix.translation
 
-                            self.trans_offset = mathutils.Vector(
-                                [self.root.matrix_global_hip.translation.x, self.root.matrix_global_hip.translation.y,
-                                 self.root.matrix_global_hip.translation.z])
-
-    def load_recording(self, ctx, path, frames):
-        bone_names = [n.name for n in glb().scene(ctx).meocap_bone_map.nodes]
-
-        source_obj = ctx.scene.meocap_state.source_armature
-        if source_obj is None:
-            return
-        action = bpy.data.actions.new(name=path)
-        frame_dt = 1 / ctx.scene.render.fps
-
-        data_paths = ['pose.bones["%s"].rotation_quaternion' % n if n != "" else "" for n in bone_names]
-        curves = [[action.fcurves.new(data_path=p, index=i) for i in range(4)] if p != "" else None for p in data_paths]
-        for c in curves:
-            if c is not None:
-                for a in c:
-                    a.keyframe_points.add(len(frames))
-
-        if not self.has_init_bones:
-            self.init_bones(ctx)
-
-        for frame_i, frame in enumerate(frames):
-            quat = [getattr(frame.optimized_pose, attr) for attr in POSE_ATTRS]
-            loc_rots = [mathutils.Quaternion(mathutils.Vector([q.w, q.i, -q.k, q.j])) for q in quat]
-            loc_rots = fill_all_pose(loc_rots, bone_names)
-            for i in range(22):
-                if curves[i] is not None:
-                    new_pose = self.bones[i].rest_matrix_from_world @ loc_rots[i] @ self.bones[i].rest_matrix_to_world
-                    for axis in range(4):
-                        curves[i][axis].keyframe_points[frame_i].co = (
-                            frame_i,
-                            new_pose[axis]
-                        )
-        # translation
-        root_bone_name = self.root.name
-
-        root_data_path = 'pose.bones["%s"].location' % root_bone_name
-        trans_curves = [action.fcurves.new(data_path=root_data_path, index=i) for i in range(3)]
-
-        for c in trans_curves:
-            c.keyframe_points.add(len(frames))
-
+    def get_new_record(self, ctx, frame) -> Optional[MeoFrame]:
         scene = glb().scene(ctx)
-        if not scene.meocap_state.lock_transition:
-            for frame_i, frame in enumerate(frames):
-                trans = frame.translation
-                trans = [trans.x, trans.y, trans.z]
-                for axis in range(3):
-                    trans_curves[axis].keyframe_points[frame_i].co = (
-                        frame_i,
-                        trans[axis]
+        target_fps = float(scene.meocap_state.fps_rebuild)
+        target_interval = 1000 / target_fps
+        if target_fps < 60:
+            if self.last_frame is not None:
+
+                if frame.timestamp < self.last_frame.timestamp:
+                    self.last_frame = frame
+                    return frame
+
+                if self.last_recording_interval > target_interval:
+                    self.last_recording_interval = 0
+                    self.last_frame = frame
+                    return None
+
+                new_interval = self.last_recording_interval + frame.timestamp - self.last_frame.timestamp
+                if new_interval >= target_interval:
+                    tick_time = target_interval - self.last_recording_interval
+                    slerp_t = tick_time / (frame.timestamp - self.last_frame.timestamp)
+
+                    new_joints = [
+                        Joint(
+                            pos=frame.joints[i].pos,
+                            loc_rot=self.last_frame.joints[i].loc_rot.slerp(frame.joints[i].loc_rot, slerp_t),
+                            glb_rot=frame.joints[i].glb_rot
+                        )
+                        for i in range(24)
+                    ]
+
+                    new_frame = MeoFrame(
+                        frame_id=frame.frame_id,
+                        src=frame.src,
+                        joints=new_joints,
+                        timestamp=frame.timestamp,
+                        translation=self.last_frame.translation + (
+                                frame.translation - self.last_frame.translation) * slerp_t
                     )
 
-        source_obj.animation_data_create()
-        source_obj.animation_data.action = action
+                    self.last_frame = frame
+                    self.last_recording_interval = new_interval % target_interval
+                    return new_frame
+
+                else:
+                    self.last_frame = frame
+                    self.last_recording_interval = new_interval
+            else:
+                self.last_frame = frame
+                self.last_recording_interval = 0
+                return frame
+        else:
+            return frame
+
+    def load_recording(self, ctx, path, frames):
+        self.start_recording()
+        for frame in frames:
+            if frame is not None:
+                rec = self.get_new_record(ctx, frame)
+                if rec is not None:
+                    self.recordings.append(rec)
+        self.end_recording(ctx)
 
     def start_recording(self):
         self.recordings = []
@@ -226,7 +243,7 @@ class PoseManager:
         if source_obj is None:
             return
         action = bpy.data.actions.new(name=path)
-        frame_dt = 1 / ctx.scene.render.fps
+        scale = self.get_scale(ctx)
 
         data_paths = ['pose.bones["%s"].rotation_quaternion' % n if n != "" else "" for n in bone_names]
         curves = [[action.fcurves.new(data_path=p, index=i) for i in range(4)] if p != "" else None for p in data_paths]

@@ -66,7 +66,8 @@ class MeoFrame:
     frame_id: int
     translation: mathutils.Vector  # 3 elements
     joints: List[Joint]  # 24 elements
-    src: Addr
+    timestamp: float # ms
+    src: Addr|None
 
 
 class Status:
@@ -88,7 +89,7 @@ class MeocapSDK:
         self.addr = addr
         self.stop_event: Optional[threading.Event] = None
         self.frame: Optional[MeoFrame] = None
-
+        self.i = 0
     def bind(self):
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -122,9 +123,10 @@ class MeocapSDK:
                 frame_id=frame.frame_id,
                 translation=mathutils.Vector((frame.translation[0], -frame.translation[2], frame.translation[1])),
                 joints=[Joint([0, 0, 0], None, None) for _ in range(24)],
-                src=Addr.from_socket_addr(src)
+                src=Addr.from_socket_addr(src),
+                timestamp=self.i*(1000/60)
             )
-
+            self.i = self.i + 1
             def convert_axis(q: mathutils.Quaternion):
                 return mathutils.Quaternion(mathutils.Vector([q.w, q.x, -q.z, q.y]))
 

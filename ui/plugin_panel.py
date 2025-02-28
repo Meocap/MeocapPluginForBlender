@@ -93,6 +93,11 @@ class MeocapPanel(bpy.types.Panel):
         row.label(text="Performer")
         row.prop_search(ctx.scene.meocap_state, "source_armature", ctx.scene, "objects")
 
+
+        row = col.row(align=True)
+        row.label(text="Target FPS")
+        row.prop(ctx.scene.meocap_state, "fps_rebuild")
+
         row = col.row(align=True)
         if ctx.scene.meocap_state.is_recording:
             row.operator('meocap.end_recording', text='End Recording', icon='MODIFIER_OFF')

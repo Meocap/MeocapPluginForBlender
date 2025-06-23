@@ -136,7 +136,7 @@ class AutoMapBoneVRMExt(bpy.types.Operator):
         source = glb().scene(ctx).meocap_state.source_armature
         if source and source.type == 'ARMATURE':
             armature_data = source.data
-            if getattr(armature_data, 'vrm_addon_extension') is not None:
+            if getattr(armature_data, 'vrm_addon_extension', None) is not None:
                 mappings = {}
                 for human_bone in armature_data.vrm_addon_extension.vrm0.humanoid.human_bones:
                     if human_bone.bone not in all_names:

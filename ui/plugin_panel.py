@@ -48,7 +48,8 @@ class MeocapPanel(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "MEOCAP"
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bones = [
             "Pelvis(Hips)", "L_UpperLeg", "R_UpperLeg", "Spine", "L_LowerLeg", "R_LowerLeg",
             "Chest", "L_Foot", "R_Foot", "UpperChest", "L_Toes", "R_Toes",

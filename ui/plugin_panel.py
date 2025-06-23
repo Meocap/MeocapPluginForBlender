@@ -67,20 +67,20 @@ class MeocapPanel(bpy.types.Panel):
         col = layout.column()
 
         row = col.row(align=True)
-        row.label(text="Now plugin version: " + self.version)
+        row.label(text=bpy.app.translations.pgettext_iface("Now plugin version: ") + self.version)
         row = col.row(align=True)
-        row.label(text="Latest plugin version: " + self.latest_version)
+        row.label(text=bpy.app.translations.pgettext_iface("Latest plugin version: ") + self.latest_version)
 
         if self.latest_version != self.version:
             row = col.row(align=True)
-            row.operator("meocap.open_plugins",text="Update Available!!!",icon='PINNED')
+            row.operator("meocap.open_plugins", text="Update Available!!!", icon='PINNED')
 
         row = col.row(align=True)
         row.label(text="Source Port")
         row.prop(ctx.scene.meocap_state, "bind_port")
 
         row = col.row(align=True)
-        row.label(text=f"FrameId:{ctx.scene.meocap_state.frame_id}")
+        row.label(text=f"{bpy.app.translations.pgettext_iface('FrameId')}:{ctx.scene.meocap_state.frame_id}")
         row = col.row(align=True)
 
         if ctx.scene.meocap_state.has_connected:
@@ -91,7 +91,6 @@ class MeocapPanel(bpy.types.Panel):
         row = col.row(align=True)
         row.label(text="Performer")
         row.prop_search(ctx.scene.meocap_state, "source_armature", ctx.scene, "objects")
-
 
         row = col.row(align=True)
         row.label(text="Target FPS")

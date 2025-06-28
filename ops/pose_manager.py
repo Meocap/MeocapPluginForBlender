@@ -1,10 +1,11 @@
-import bpy
+import json
 from typing import Optional, List
 
+import bpy
 import mathutils
-import json
-from ..meocap_sdk import MeocapSDK, Addr, ErrorType, FrameReader, MeoFrame, Joint
+
 from ..glb import glb
+from ..meocap_sdk import MeocapSDK, Addr, ErrorType, FrameReader, MeoFrame, Joint
 
 
 class PoseBone:
@@ -76,7 +77,7 @@ class PoseManager:
         for obj in bpy.context.scene.objects:
             if obj.name == source_obj.name and obj.type == 'ARMATURE':
                 scene_obj_matrix_world = obj.matrix_world
-                print(f"Found Scene Object: {obj.name}")
+                # print(f"Found Scene Object: {obj.name}")
                 break
 
         for i in range(22):
@@ -126,7 +127,7 @@ class PoseManager:
         for obj in bpy.context.scene.objects:
             if obj.name == source_obj.name and obj.type == 'ARMATURE':
                 scene_obj_matrix_world = obj.matrix_world
-                print(f"Found Scene Object: {obj.name}")
+                # print(f"Found Scene Object: {obj.name}")
                 break
 
         if self.has_init_bones:
@@ -308,8 +309,8 @@ class MeocapConnect(bpy.types.Operator):
     bl_idname = 'meocap.connect'
     bl_label = 'Connect'
 
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.init()
 
     def init(self):
@@ -393,13 +394,15 @@ class MeocapLoadRecording(bpy.types.Operator):
         try:
             rd = FrameReader()
             frames = rd.decode_recordings(self.filepath)
-            self.report({'INFO'}, f"Read Meocap Recording file: {self.filepath} with {len(frames)} frames")
+            text = bpy.app.translations.pgettext_iface("Read Meocap Recording file: %s with %i frames")
+            self.report({'INFO'}, text % (self.filepath, len(frames)))
             pose_manager.load_recording(ctx, self.filepath, frames)
 
 
 
         except Exception as e:
-            self.report({'ERROR'}, f"Failed to Read file: {e}")
+            text = bpy.app.translations.pgettext_iface("Failed to Read file: %s")
+            self.report({'ERROR'}, text % str(e))
         return {'FINISHED'}
 
     def invoke(self, ctx, event):
@@ -447,9 +450,11 @@ class MeocapImportRetargetConfig(bpy.types.Operator):
                 if len(bone_names) == 24:
                     for i, n in enumerate(glb().scene(ctx).meocap_bone_map.nodes):
                         n.name = bone_names[i]
-            self.report({'INFO'}, f"Open Meocap Retarget file: {self.filepath}")
+            text = bpy.app.translations.pgettext_iface("Open Meocap Retarget file: %s")
+            self.report({'INFO'}, text % self.filepath)
         except Exception as e:
-            self.report({'ERROR'}, f"Failed to Open file: {e}")
+            text = bpy.app.translations.pgettext_iface("Failed to Open file: %s")
+            self.report({'ERROR'}, text % str(e))
             return {'CANCELLED'}
 
         return {'FINISHED'}
@@ -476,9 +481,11 @@ class MeocapExportRetargetConfig(bpy.types.Operator):
         try:
             with open(self.filepath, "w+", encoding="utf-8") as file:
                 json.dump(bone_names, file, ensure_ascii=False, indent=4)
-            self.report({'INFO'}, f"Save Meocap Retarget file: {self.filepath}")
+            text = bpy.app.translations.pgettext_iface("Save Meocap Retarget file: %s")
+            self.report({'INFO'}, text % self.filepath)
         except Exception as e:
-            self.report({'ERROR'}, f"Failed to Save file: {e}")
+            text = bpy.app.translations.pgettext_iface("Failed to Save file: %s")
+            self.report({'ERROR'}, text % str(e))
             return {'CANCELLED'}
         return {'FINISHED'}
 

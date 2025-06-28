@@ -1,9 +1,10 @@
 import bpy
-from . import ops
-from . import core
-from . import ui
-from . import glb
 
+from . import core
+from . import glb
+from . import ops
+from . import translate
+from . import ui
 
 bl_info = {
     "name": "Meocap",
@@ -44,6 +45,7 @@ def reset_property_values(_):
 
 
 def register():
+    translate.register()
     bpy.app.handlers.load_post.append(reset_property_values)
 
     g = glb.glb()
@@ -65,6 +67,7 @@ bpy.app.handlers.load_post.append(on_load)
 
 
 def unregister():
+    translate.unregister()
     ops.stop_all()
     if on_load in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(on_load)

@@ -1,9 +1,8 @@
+import json
+import os
 import threading
 
 import bpy
-import json
-import os
-
 import requests
 
 version = "0.0.0"
@@ -22,7 +21,6 @@ def fetch_version_json():
     global latest_version
     response = requests.get("https://meocap-plugin-files.oss-cn-beijing.aliyuncs.com/plugins/blender/docs/latest.json")
     latest_version = response.json()["version"]
-
 
 
 threading.Thread(target=fetch_version_json).start()
@@ -48,7 +46,8 @@ class MeocapPanel(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "MEOCAP"
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bones = [
             "Pelvis(Hips)", "L_UpperLeg", "R_UpperLeg", "Spine", "L_LowerLeg", "R_LowerLeg",
             "Chest", "L_Foot", "R_Foot", "UpperChest", "L_Toes", "R_Toes",
@@ -68,20 +67,20 @@ class MeocapPanel(bpy.types.Panel):
         col = layout.column()
 
         row = col.row(align=True)
-        row.label(text="Now plugin version: " + self.version)
+        row.label(text=bpy.app.translations.pgettext_iface("Now plugin version: ") + self.version)
         row = col.row(align=True)
-        row.label(text="Latest plugin version: " + self.latest_version)
+        row.label(text=bpy.app.translations.pgettext_iface("Latest plugin version: ") + self.latest_version)
 
         if self.latest_version != self.version:
             row = col.row(align=True)
-            row.operator("meocap.open_plugins",text="Update Available!!!",icon='PINNED')
+            row.operator("meocap.open_plugins", text="Update Available!!!", icon='PINNED')
 
         row = col.row(align=True)
         row.label(text="Source Port")
         row.prop(ctx.scene.meocap_state, "bind_port")
 
         row = col.row(align=True)
-        row.label(text=f"FrameId:{ctx.scene.meocap_state.frame_id}")
+        row.label(text=f"{bpy.app.translations.pgettext_iface('FrameId')}:{ctx.scene.meocap_state.frame_id}")
         row = col.row(align=True)
 
         if ctx.scene.meocap_state.has_connected:
@@ -92,7 +91,6 @@ class MeocapPanel(bpy.types.Panel):
         row = col.row(align=True)
         row.label(text="Performer")
         row.prop_search(ctx.scene.meocap_state, "source_armature", ctx.scene, "objects")
-
 
         row = col.row(align=True)
         row.label(text="Target FPS")
@@ -168,36 +166,33 @@ class MeocapPanel(bpy.types.Panel):
                     column_center.prop_search(bone_map.nodes[idx], "name", bone_map.nodes[idx], "available_bones")
                 # column_lock.prop(bone_map.nodes[idx], "lock")
 
-            row = box.row().split(factor=0.15)
+            factor = 0.15
+            column = box.column(align=True)
+            column.separator()
 
-            column_label = row.column(align=True)
-            column_left = row.column()
-
-            # column_left_lock = row.column(align=True)
-
-            column_right = row.column()
-            # column_right_lock = row.column(align=True)
-            column_label.label(text="")
-            column_left.label(text="Left")
-            column_right.label(text="Right")
-            # column_left_lock.label(text="")
-            # column_right_lock.label(text="")
+            split = column.row(align=True).split(factor=factor)
+            split.separator()
+            row = split.row(align=True)
+            row.label(text="Left")
+            row.label(text="Right")
 
             for i in range(len(self.side_names)):
                 idx = self.left_bone[i]
                 name = self.side_names[i]
 
-                column_label.label(text=name)
+                split = column.row(align=True).split(factor=factor, align=True)
+                split.label(text=name)
+                row = split.row(align=True)
 
                 if ctx.scene.meocap_state.pure_input_mode:
-                    column_left.prop(bone_map.nodes[idx], "name")
+                    row.prop(bone_map.nodes[idx], "name")
                 else:
-                    column_left.prop_search(bone_map.nodes[idx], "name", bone_map.nodes[idx], "available_bones")
+                    row.prop_search(bone_map.nodes[idx], "name", bone_map.nodes[idx], "available_bones")
 
                 # column_left_lock.prop(bone_map.nodes[idx], "lock")
 
                 idx = idx + 1
                 if ctx.scene.meocap_state.pure_input_mode:
-                    column_right.prop(bone_map.nodes[idx], "name")
+                    row.prop(bone_map.nodes[idx], "name")
                 else:
-                    column_right.prop_search(bone_map.nodes[idx], "name", bone_map.nodes[idx], "available_bones")
+                    row.prop_search(bone_map.nodes[idx], "name", bone_map.nodes[idx], "available_bones")
